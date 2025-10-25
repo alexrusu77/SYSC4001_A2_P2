@@ -16,10 +16,10 @@ int main()
       else
       {
         printf("Process 2 (PID %d) - Cycle number: %d\n", getpid(), cycles);
-        counter--;
-        cycles++;
-        sleep(1);
       }
+      counter--;
+      cycles++;
+      sleep(1);
     }
   
 }
