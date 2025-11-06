@@ -7,7 +7,7 @@ int main()
   int counter = 0;
   int cycles = 0;
  
-  while (1)
+  while (counter >= -500)
     {
       if (counter % 3 == 0)
       {
