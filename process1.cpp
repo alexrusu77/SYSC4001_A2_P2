@@ -5,7 +5,7 @@
 
 int main()
 {
-  pid_t pid;
+  pid_t pid; //Create a new process
   int counter = 0;
   int cycles = 0;
 
