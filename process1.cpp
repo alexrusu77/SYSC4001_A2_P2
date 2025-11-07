@@ -2,23 +2,26 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <sys/shm.h>
+#include <sys/ipc.h>
+
 
 struct shared {
   int multiple;
   int counter;
-}
+};
 
 static const key_t key = 1234
 
 int main()
 {
-  int shmid = shmget(key, sizeof(shared), itimerspec | 0666);
+  int shmid = shmget(key, sizeof(shared), IPC_CREAT | 0666);
   if (shmid < 0) {
     perror("shmget");
     exit(1);
   }
 
-  Shared* shm = (shared*)shmat(shmid, NULL, 0);
+  struct Shared* shm = (shared*)shmat(shmid, NULL, 0);
   if (shm == (void*) - 1) {
     perror("shmat");
     exit(1);
@@ -28,9 +31,6 @@ int main()
   shm->counter = 0;
 
   pid_t pid; //Create a new process
-  int counter = 0;
-  int cycles = 0;
-
   pid = fork();
 
   if (pid < 0)
@@ -47,40 +47,43 @@ int main()
   }
   else
   {
+    int cycles = 0;
     while (1)
       {
-        int status = 0;
+        int m = shm->multiple;
+        int c = ++(shm->counter);
+
         printf("Process 1 (PID %d): child PID %d started; waiting...\n", getpid(), pid);
 
-        if (waitpid(pid, &status, 0) == -1) {
-          perror("waitpid");
-          exit(1);
-        }
-
-        if (counter % 3 == 0)
+        if (c % m == 0)
         {
-          printf("Process 1 (PID %d) - Cycle number: %d - %d is a multiple of 3\n", getpid(), cycles, counter);
+          printf("Process 1 (PID %d) - Cycle number: %d - %d is a multiple of %d\n", getpid(), cycles, c, m);
         }
         else
         {
-          printf("Process 1 (PID %d) - Cycle number: %d\n", getpid(), cycles);
+          printf("Process 1 (PID %d) - Cycle number: %d, counter: %d (multiple=%d)\n", getpid(), cycles, c, m);
         }
-        counter++;
+
+        if (c > 500) {
+          printf("Process 1: counter = %d > 500, finishing...\n", c);
+        }
+
         cycles++;
         sleep(1);
-
-        if (WIFEXITED(status)) {
-          printf("Process 1: child exited with code %d. Exiting P1.\n", WEXITSTATUS(status));
-        } else if (WIFSIGNALED(status)) {
-          printf("Process 1: child killed by signal %d. Exiting P1.\n", WTERMSIG(status));
-        }
-        break;
       }
   }
 
   int status = 0;
-  waitpid(pid,&status, 0);
-  shmct1(shmid, itimerspec, NULL);
+  if (waitpid(pid, &status, 0) == -1) {
+    perror("waitpid");
+    exit(1);
+  }
 
+  if (shmdt((void*)shm) == - 1) {
+    perror("shmdt");
+  }
+  if (shmct1(shmid,IPC_RMID,NULL) == -1) {
+    perror("shmct1 IPC_RMID");
+  }
   return 0;
 }
