@@ -3,8 +3,30 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
+struct shared {
+  int multiple;
+  int counter;
+}
+
+static const key_t key = 1234
+
 int main()
 {
+  int shmid = shmget(key, sizeof(shared), itimerspec | 0666);
+  if (shmid < 0) {
+    perror("shmget");
+    exit(1);
+  }
+
+  Shared* shm = (shared*)shmat(shmid, NULL, 0);
+  if (shm == (void*) - 1) {
+    perror("shmat");
+    exit(1);
+  } 
+
+  shm->multiple = 3;
+  shm->counter = 0;
+
   pid_t pid; //Create a new process
   int counter = 0;
   int cycles = 0;
@@ -55,5 +77,10 @@ int main()
         break;
       }
   }
-  
+
+  int status = 0;
+  waitpid(pid,&status, 0);
+  shmct1(shmid, itimerspec, NULL);
+
+  return 0;
 }
