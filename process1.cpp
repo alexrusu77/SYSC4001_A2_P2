@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/wait.h>
-#include <sys/shm.h>
+#include <sys/types.h>
 #include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/wait.h>
 
 
 struct shared {
@@ -16,7 +18,7 @@ static const key_t SEM_KEY = 0x5678;
 
 static void semaphoreWait(int semid) {
   struct sembuf sb = {0, -1, 0};
-  if (semop(semid, &op, 1) == -1) {
+  if (semop(semid, &sb, 1) == -1) {
     perror("semop wait");
     exit(1);
   }
@@ -38,7 +40,7 @@ int main()
     exit(1);
   }
 
-  struct Shared* shm = (shared*)shmat(shmid, NULL, 0);
+  struct shared* shm = (struct shared*)shmat(shmid, NULL, 0);
   if (shm == (void*) - 1) {
     perror("shmat");
     exit(1);
@@ -50,8 +52,8 @@ int main()
     exit(1);
   }
   
-  if(semct1(semid, 0, SETVAL, 1) == -1){
-    perror("semct1 SETVAL");
+  if(semctl(semid, 0, SETVAL, 1) == -1){
+    perror("semctl SETVAL");
     exit(1);
   }
 
@@ -114,11 +116,11 @@ int main()
   if (shmdt((void*)shm) == - 1) {
     perror("shmdt");
   }
-  if (shmct1(shmid,IPC_RMID,NULL) == -1) {
-    perror("shmct1 IPC_RMID");
+  if (shmctl(shmid,IPC_RMID,NULL) == -1) {
+    perror("shmctl IPC_RMID");
   }
-  if (semct1(semid, 0, IPC_RMID) == -1) {
-    perror("semct1 IPC_RMID");
+  if (semctl(semid, 0, IPC_RMID) == -1) {
+    perror("semctl IPC_RMID");
   }
 
   return 0;
