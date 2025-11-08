@@ -17,7 +17,7 @@ static const key_t SEM_KEY = 0x5678;
 
 static void semaphoreWait(int semid) {
   struct sembuf sb = {0, -1, 0};
-  if (semop(semid, &op, 1) == -1) {
+  if (semop(semid, &sb, 1) == -1) {
     perror("semop wait");
     exit(1);
   }
@@ -25,7 +25,7 @@ static void semaphoreWait(int semid) {
 
 static void sempahoreSignal(int semid) {
   struct sembuf sb = {0, 1, 0};
-  if (semop(semid, &op, 1) == -1) {
+  if (semop(semid, &sb, 1) == -1) {
     perror("semop signal");
     exit(1);
   }
@@ -33,13 +33,13 @@ static void sempahoreSignal(int semid) {
 
 int main()
 {
-  int shmid = shmget(SHM_KEY, sizeof(shared), itimerspec | 0666);
+  int shmid = shmget(SHM_KEY, sizeof(struct shared), IPC_CREAT | 0666);
   if (shmid < 0) {
     perror("shmget");
     exit(1);
   }
 
-  struct Shared* shm = (shared*)shmat(shmid, NULL, 0);
+  struct shared* shm = (struct shared*)shmat(shmid, NULL, 0);
   if (shm == (void*) - 1) {
     perror("shmat");
     exit(1);
@@ -50,9 +50,8 @@ int main()
     perror("semget");
     exit(1);
   }
-  
-  if(semct1(semid, 0, SETVAL, 1) == -1){
-    perror("semct1 SETVAL");
+  if(semctl(semid, 0, SETVAL, 1) == -1){
+    perror("semctl SETVAL");
     exit(1);
   }
 

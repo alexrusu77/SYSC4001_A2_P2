@@ -100,6 +100,7 @@ int main()
 
         if (c > 500) {
           printf("Process 1: counter = %d > 500, finishing...\n", c);
+          break;
         }
 
         cycles++;
