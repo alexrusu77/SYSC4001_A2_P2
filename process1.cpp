@@ -26,7 +26,7 @@ static void semaphoreWait(int semid) {
 
 static void sempahoreSignal(int semid) {
   struct sembuf sb = {0, 1, 0};
-  if (semop(semid, &op, 1) == -1) {
+  if (semop(semid, &sb, 1) == -1) {
     perror("semop signal");
     exit(1);
   }
