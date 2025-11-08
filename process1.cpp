@@ -11,11 +11,28 @@ struct shared {
   int counter;
 };
 
-static const key_t key = 1234
+static const key_t SHM_KEY = 1234;
+static const key_t SEM_KEY = 0x5678;
+
+static void semaphoreWait(int semid) {
+  struct sembuf sb = {0, -1, 0};
+  if (semop(semid, &op, 1) == -1) {
+    perror("semop wait");
+    exit(1);
+  }
+}
+
+static void sempahoreSignal(int semid) {
+  struct sembuf sb = {0, 1, 0};
+  if (semop(semid, &op, 1) == -1) {
+    perror("semop signal");
+    exit(1);
+  }
+}
 
 int main()
 {
-  int shmid = shmget(key, sizeof(shared), IPC_CREAT | 0666);
+  int shmid = shmget(SHM_KEY, sizeof(shared), IPC_CREAT | 0666);
   if (shmid < 0) {
     perror("shmget");
     exit(1);
@@ -27,8 +44,21 @@ int main()
     exit(1);
   } 
 
+  int semid = semget(SEM_KEY, 1, IPC_CREAT | 0666);
+  if (semid < 0) {
+    perror("semget");
+    exit(1);
+  }
+  
+  if(semct1(semid, 0, SETVAL, 1) == -1){
+    perror("semct1 SETVAL");
+    exit(1);
+  }
+
+  semaphoreWait(semid);
   shm->multiple = 3;
   shm->counter = 0;
+  sempahoreSignal(semid);
 
   pid_t pid; //Create a new process
   pid = fork();
@@ -50,8 +80,10 @@ int main()
     int cycles = 0;
     while (1)
       {
+        semaphoreWait(semid);
         int m = shm->multiple;
         int c = ++(shm->counter);
+        sempahoreSignal(semid);
 
         printf("Process 1 (PID %d): child PID %d started; waiting...\n", getpid(), pid);
 
@@ -85,5 +117,9 @@ int main()
   if (shmct1(shmid,IPC_RMID,NULL) == -1) {
     perror("shmct1 IPC_RMID");
   }
+  if (semct1(semid, 0, IPC_RMID) == -1) {
+    perror("semct1 IPC_RMID");
+  }
+
   return 0;
 }
